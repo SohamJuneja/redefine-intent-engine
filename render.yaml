@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: rift-solver
+    runtime: node
+    rootDir: solver
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: STARKNET_RPC_URL
+        sync: false
+      - key: SOLVER_ADDRESS
+        sync: false
+      - key: SOLVER_PRIVATE_KEY
+        sync: false
+      - key: VAULT_CONTRACT_ADDRESS
+        sync: false
+      - key: TONGO_CONTRACT_ADDRESS
+        sync: false
+      - key: STRK_TOKEN_ADDRESS
+        sync: false
+      - key: TARGET_VESU_VAULT
+        sync: false
+      - key: TONGO_SHIELD_AMOUNT
+        sync: false
