@@ -153,7 +153,8 @@ app.post('/execute-intent', async (req, res) => {
 });
 
 initAccount().then(() => {
-    app.listen(3001, () => {
-        console.log("🚀 Rift Solver API listening on http://localhost:3001");
+    const PORT = process.env.PORT || 3001;
+    app.listen(PORT, () => {
+        console.log(`🚀 Rift Solver API listening on port ${PORT}`);
     });
 }).catch(console.error);
