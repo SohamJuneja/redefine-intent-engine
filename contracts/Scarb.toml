@@ -1,0 +1,11 @@
+[package]
+name = "btc_intent_vault"
+version = "0.1.0"
+edition = "2025_12"
+
+[dependencies]
+starknet = "2.16.0"
+
+[[target.starknet-contract]]
+sierra = true
+casm = true

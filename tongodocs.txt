@@ -1,0 +1,978 @@
+DOCS:
+Transfer Operation
+This operation sends encrypted amounts between two Tongo accounts of the same Tongo instance without revealing the transfer amount. The parameters are:
+
+amount: The amount of encrypted Tongo you want to transfer.
+to: The public key of the Tongo account thaw will receive the transfer.
+sender: The sender of the transaction.
+const transferOp = await senderAccount.transfer({
+    to: "RECEIVER_PUBLIC_KEY",
+    amount: "AMOUNT_TO_TRANSFER"
+    sender: "SENDER_ADDRESS"
+});
+
+const tx = await signer.execute([transferOp.toCalldata()]);
+await provider.waitForTransaction(tx.transaction_hash);
+Balance Handling
+As part of the Transfer operation, the user gives two ElGamal encryption of the same amount, one is encrypted for the sender's public key and it is subtracted from the sender's balance. The other one is encrypted for the receiver's public key and it is added to the receiver's pending balance.
+
+Zero-Knowledge Proof
+In this operation, the ZK proof given by the sender shows:
+
+Ownership of the sender account.
+The two given encrpytion are valid encryptions for the same amount under the correct public keys.
+The amount encrypted in positive.
+After the subtraction, the sender's balance is positive.
+
+Tongo Instances
+The class hash of the current version of Tongo is
+
+Tongo Class Hash	0x00582609087e5aeb75dc25284cf954e2cee6974568d1b5636052a9d36eec672a
+Mainnet
+We listed here a set of instances of Tongo deployed in mainnet
+
+STRK	
+ERC20	0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d
+Tongo	0x3a542d7eb73b3e33a2c54e9827ec17a6365e289ec35ccc94dde97950d9db498
+rate	50000000000000000
+ETH	
+ERC20	0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7
+Tongo	0x276e11a5428f6de18a38b7abc1d60abc75ce20aa3a925e20a393fcec9104f89
+rate	3000000000000
+wBTC	
+ERC20	0x03fe2b97c1fd336e750087d68b9b867997fd64a2661ff3ca5a7c771641e8e7ac
+Tongo	0x6d82c8c467eac77f880a1d5a090e0e0094a557bf67d74b98ba1881200750e27
+rate	10
+USDC.e	
+ERC20	0x053c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8
+Tongo	0x72098b84989a45cc00697431dfba300f1f5d144ae916e98287418af4e548d96
+rate	10000
+USDC	
+ERC20	0x033068F6539f8e6e6b131e6B2B814e6c34A5224bC66947c47DaB9dFeE93b35fb
+Tongo	0x026f79017c3c382148832c6ae50c22502e66f7a2f81ccbdb9e1377af31859d3a
+rate	10000
+USDT	
+ERC20	0x068f5c6a61780768455de69077e07e89787839bf8166decfbf92b645209c0fb8
+Tongo	0x659c62ba8bc3ac92ace36ba190b350451d0c767aa973dd63b042b59cc065da0
+rate	10000
+DAI	
+ERC20	0x00da114221cb83fa859dbdb4c44beeaa0bb37c7537ad5ae66fe5e0efd20e6eb3
+Tongo	0x511741b1ad1777b4ad59fbff49d64b8eb188e2aeb4fc72438278a589d8a10d8
+rate	10000000000000000
+Sepolia
+We listed here a set of instances of Tongo deployed in mainnet
+
+STRK	
+ERC20	0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d
+Tongo	0x408163bfcfc2d76f34b444cb55e09dace5905cf84c0884e4637c2c0f06ab6ed
+rate	50000000000000000
+ETH	
+ERC20	0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7
+Tongo	0x2cf0dc1d9e8c7731353dd15e6f2f22140120ef2d27116b982fa4fed87f6fef5
+rate	3000000000000
+USDC	
+ERC20	0x53b40a647cedfca6ca84f542a0fe36736031905a9639a7f19a3c1e66bfd5080
+Tongo	0x2caae365e67921979a4e5c16dd70eaa5776cfc6a9592bcb903d91933aaf2552
+rate	10000
+wBTC	
+ERC20	0x452bd5c0512a61df7c7be8cfea5e4f893cb40e126bdc40aee6054db955129e
+Tongo	0x02b9f62f9be99590ad2505e9e89ca746c8fb67bdb6a4be2a1b9a1d867af7339e
+rate	10
+Deployment
+You can deploy another instance of Tongo with your own set of parameters. The constructor of the contract is
+
+    #[constructor]
+    fn constructor(
+        ref self: ContractState,
+        owner: ContractAddress,
+        ERC20: ContractAddress,
+        rate: u256,
+        bit_size: u32,
+        auditor_key: Option<PubKey>,
+    ) {
+        self.owner.write(owner);
+        self.ERC20.write(ERC20);
+        self.rate.write(rate);
+
+        assert!(bit_size <= 128_u32, "Bit size should be 128 at max");
+        self.bit_size.write(bit_size);
+
+        if let Some(key) = auditor_key {
+            self._set_auditor_key(key);
+        }
+    }
+
+GITHUB
+TELEGRAM
+DOCS
+TWITTER
+
+
+Introduction to Tongo
+Tongo is a confidential payment system for ERC20 tokens on Starknet, providing privacy-preserving transactions while maintaining auditability and compliance features. Built on ElGamal encryption and zero-knowledge proofs, Tongo enables users to transact with hidden amounts while preserving the ability to verify transaction validity. Tongo is heavily based in this paper.
+
+What Makes Tongo Different
+No Trusted Setup
+Unlike many ZK systems, Tongo requires no trusted ceremony. All cryptography is built on the discrete logarithm assumption over the Stark curve, with no hidden trapdoors or setup parameters.
+
+Native Starknet Integration
+Tongo leverages Starknet's native elliptic curve operations, making verification extremely efficient (~120K Cairo steps per transfer) compared to other privacy solutions that require expensive proof verification.
+
+Flexible Compliance
+The protocol supports multiple compliance models:
+
+Global auditor: All transactions encrypted for regulatory oversight
+Selective disclosure: Optional viewing keys per transaction
+Ex-post proving: Retroactive transaction disclosure without revealing keys
+How It Works
+1. Key Generation
+Each user generates a keypair (x,y=gx)
+ where g
+ is the Stark curve generator. The public key y
+ serves as their account identifier.
+
+2. Encrypted Balances
+Balances are stored as ElGamal ciphertexts:
+
+Enc[y](b,r)=(gbyr,gr)
+
+The encryption is additively homomorphic, allowing on-chain balance updates without decryption. Each Tongo account has two balances: the current balance and the pending balance.
+
+The current balance stores the amount of Tongos the account can use to perform Transfers/Withdraw operations. Zero-Knowledge proofs are check againts this balance and only the owner of the Tongo account can modify this balance thought Fund/Rollover operations.
+
+The pending balance stores the amount of Tongos that the account has received through Transfer operations. To use this balance the account has to transform the pending balance in current balance. This is done by a Rollover operation.
+
+Core Operations
+Tongo has four user operation needed to operate a Tongo account. All these operations requires some kind of Zero-Knowledge proof to be validated by te contract. The operations are:
+
+Funding
+Convert standard ERC20 tokens to encrypted balances: In this operation some amount of ERC20 are send to the Tongo contract. The contract the mint for the given Tongo account some amount of tongo based on the ERC20-Tongo rate defined in the same contract. At this stage the amount sent is public, so the contract creates a encryption with a fixed random and adds the newly minted Tongos to the user account. This operation can only be performed by the owner of the Tongo account.
+
+Transfers
+Performs confidential transfers between accounts: In this operation some amount of Tongos are sent to the given receiver. The sender creates a encryption of the amount for the receiver and a encryption of the same amount for themself. These encryption are added to the receiver and subtracted from the receiver respectively. The sender also provides a ZK proof that shows:
+
+Ownership of the sender account.
+Both encrpytion are valid encryptions for the same amount under the correct public keys.
+The amount encrypted in positive.
+The sender has enough balance to perform the operation.
+Rollover
+In this operation the pending balance is added to the current balance of a given Tongo account and then emptied.
+
+This operation can only be performed by the owner of the Tongo account.
+
+Withdrawals
+Convert back to standard ERC20 tokens: In this operation some amount of Tongo are converted back to ERC20 and sent to the given starknet account. The whitdrawn amount is public, so the contract creates a encryption of the amount for the user public key and subtract it from the user balance. The user has to provide a ZK proof that shows:
+
+Ownership of the Tongo account.
+The account has enough balance to perform the operation.
+Security Measures
+No double usage of proofs
+In Tongo, all operation are validated by a ZK proof. If a ZK proof from a given operation is valid, the operation is performed. For this reason, to preven reusage of previous valid proofs (or some parts of a valid proof) some data is included and signed in each ZK proof. This includes:
+
+The chain_id: A valid proof in sepolia is not valid in mainet.
+The tongo contract address: A valid proof constructer for a particular instance of Tongo is not valid for another one.
+A user account nonce: ZK proof are construted for a given Tongo account nounce. With each performed operation the Tongo account nonce is increased. So a valid proof will no be valid in the future.
+Whitelisting of Tx sender
+When constructing the ZK proof the tongo account owner choses the straknet account that will execute the tx. This addres is incorporated and signed in the ZK proof. The contract checks this againts the caller address. This guarantees that the ZK proof will be valid only if it is executed by the starknet account chosed by the tongo account owner.
+
+Balance Integrity
+Each time a balance is going to be modified by adding/subtracting an encryption, the encrpytion has to pass a ZK proof that shows:
+
+The encryption is a valid ElGamal encryption
+The amount encrypted is positive
+The encryption is made for the correct public key
+Use Cases
+Individual Privacy
+Personal transactions: Hide transfer amounts from public view
+Salary payments: Confidential payroll systems
+Compliance
+Optional Compliance for Institutions: Deployer can chose weather to deploy with or without auditor keys
+Treasury Management: Confidential transfers with auditability for stakeholders
+Potential Integrations
+Private AMM trading: Hidden trade sizes
+Neo-Bank Confidential Payments: By design tongo can support payment procesors required speeds
+DAO governance: Confidential voting systems
+Getting Started
+To start building with Tongo, proceed to the SDK Documentation for installation and usage guides.
+
+To understand the cryptographic foundations, continue to the Encryption System chapter.
+
+Encryption System
+Tongo uses ElGamal encryption over elliptic curves to maintain confidential balances while enabling homomorphic operations on-chain.
+
+ElGamal Encryption
+Each user's balance is encrypted using a public key derived from their private key. ElGamal encryption of an amount b
+ under a public key y
+ is a pair point of the group of elliptic curves points G
+. The encryption function is defined as:
+
+Enc[y]Enc[y]:[0,bmax)×Fp→G2(b,r)=(L,R)=(gbyr,gr)
+
+Where:
+
+y=gx
+ is the user's public key (derived from private key x
+)
+g
+ is the generator of the Stark curve
+b
+ is the balance amount in the range [0,bmax)
+r
+ is a random blinding factor
+p
+ is the curve order
+Additive Homomorphism
+The key property of this encryption is additive homomorphism. Given two encryptions under the same public key, their product is a valid encryption of the sum:
+
+Enc[y](b,r)⋅Enc[y](b′,r′)=(gb+b′yr+r′,gr+r′)=Enc[y](b+b′,r+r′)
+
+This allows the contract to:
+
+Add encrypted amounts without decryption
+Subtract encrypted amounts homomorphically
+Update balances while maintaining privacy
+Balance Decryption
+To read their balance, a user recovers gb
+ using their private key x
+:
+
+LRx=gbyr(gr)x=gb(gx)rgrx=gb
+
+Since b
+ is bounded by [0,bmax)
+, the discrete logarithm b
+ can be brute-forced. The time requiered to decript a balance depends on bmax
+. Tongo is parametrized in this variable that we call bit_size the current implementation of Tongo uses bit_size = 32. A naïve JavaScript implementation can decrypt ~100k units per second, while optimized algorithms handle the full 32-bit range much faster. The common algorithms used for this kind of decryption are:
+
+Brute force: Iterate gi
+ for i=0,1,2,…
+ until matching gb
+Baby-step Giant-step: More efficient O(n−−√)
+ algorithm
+Pollard's rho: Probabilistic algorithm with similar complexit
+
+Tongo TypeScript SDK
+The Tongo TypeScript SDK provides a comprehensive interface for building confidential payment applications on Starknet. It handles key management, encryption, proof generation, and transaction serialization.
+
+Features
+Simple API: High-level methods for all Tongo operations
+Type Safety: Full TypeScript support with complete type definitions
+Proof Generation: Automatic ZK proof creation for all operations
+Encryption Handling: Transparent management of encrypted balances
+Starknet Integration: Seamless integration with Starknet wallets and providers
+Package Information
+Package: @fatsolutions/tongo-sdk
+Current Version: 1.3.1
+License: Apache-2.0
+Repository: github.com/fatlabsxyz/tongo
+Supported Networks
+The SDK works on:
+
+Starknet Mainnet - Production deployments
+Starknet Sepolia - Testnet for development
+Check the deployed Tongo Instances for information about Tongo contracts wrapping different tokens.
+
+Quick Links
+Installation - Install the SDK
+Quick Start - Your first Tongo transaction
+Core Concepts - Understand the fundamentals
+API Reference - Complete API documentation
+Examples - Real-world code examples
+
+Quick Start
+Installation
+Using npm
+To use the SDK you need to install it together with a starknet.js version superior to v8.
+
+npm install @fatsolutions/tongo-sdk
+npm install starknet@8.x.x
+Basic Concepts
+Starknet Account Class
+This is the starknet account that will pay the transanction costs of the tx you send to starknet. To set it up the first step is to set a provider and then initializathe an Account class from the starknet library
+
+import { Account, RpcProvider } from "starknet";
+
+// Setup Starknet provider 
+const provider = new RpcProvider({
+    nodeUrl: "YOUR_RPC_PROVIDER",
+    specVersion: "0.8.1",
+});
+
+// Your Starknet account (for paying gas fees)
+const signer = new Account({
+    provider,
+    address: "YOUR_STARKNET_ADDRESS",
+    signer: "YOUR_STARKNET_PRIVATE_KEY"
+});
+At this step, the signer can execute a well constructed call with signer.execute(call). You can read more about how to interact with a starknet contract in the starknet.js documentation
+
+Tongo Account Class
+This class represents a user's Tongo Account. The main feature is that it can construct the payloads for different Tongo operations (Fund/Transfer/Rollover/Withdraw/Ragequit). To create an instance to a Tongo account class you need the private key of the account, the Tongo address to interact with and a rpc provider.
+
+import { Account as TongoAccount } from "@fatsolutions/tongo-sdk";
+
+const tongoAddress = "TONGO_CONTRACT_ADDRESS";
+
+const privateKey = "USER_TONGO_PRIVATE_KEY";
+
+const tongoAccount = new TongoAccount(
+    privateKey,
+    tongoAddress,
+    provider
+);
+
+console.log("Your Tongo public key is:", tongoAcount.publicKey);
+You can read more about the Tongo Account Class here
+
+Basic Interactions: Operations
+Whit a Tongo Account and a Starkenet Account set up, you can start to create and execute Tongo Operations (Fund/Transfer/Rollover/Withdraw/Ragequit). You can read more about Operations and the way of creating them here. To execute an operation need to create the call with the Tongo Account class and the execute it with the Starknet Account class.
+
+
+const operation = tongoAccount.someOperation({...params});
+
+const call = operation.toCalldata();
+
+signer.execute(call)
+
+Account Class
+The Account class is the main interface for interacting with Tongo. An instance of a Tongo Account represents a user's account for a specific Tongo contract. Some of the functionalities of the Account are:
+
+Decrypting the balance of the user.
+Creating the Operations with the ZK proofs needed.
+Decrypting and showing the transaction history for the user.
+Creating an Account
+import { Account as TongoAccount } from "@fatsolutions/tongo-sdk";
+import { RpcProvider } from "starknet";
+
+const provider = new RpcProvider({
+    nodeUrl: "YOUR_RPC_URL",
+    specVersion: "0.8.1",
+});
+
+const tongoAddress = "TONGO_CONTRACT_ADDRESS";
+
+const privateKey = "USER_TONGO_PRIVATE_KEY";
+const tongoAccount = new TongoAccount(
+    privateKey,
+    tongoAddress,
+    provider
+);
+Public Key
+Each instance of a Tongo Account class is identified by its public key. At low level the public is the elliptic curve point
+pk=gsk
+where pk
+ is the public key, sk
+ is the secret key and g
+ is the stark curve generator. This form of the public key is used at low level to create the Zero-Knoledge proofs. To see this representation of the public key of an instance of a Tongo Account you can view the publicKey property:
+
+console.log(account.publicKey);
+// { x: bigint, y: bigint }
+To have a cleaner repesentatin of the public key we offer a base58-encoded one. We call it the Tongo address of a given account:
+
+const address = account.tongoAddress();
+console.log(address);
+// "Um6QEVHZaXkii8hWzayJf6PBWrJCTuJomAst75Zmy12"
+Note We offer the utility functions pubKeyBase58ToAffine() and pubKeyAffineToBase58() in the file types.ts to facilitate the conversion betweer the two representations of the public key.
+
+Account State
+The high level state of a Tongo Account at a given time is its current and pending balances and its nonce. We offerd a state() method to get this
+
+const state = await account.state();
+console.log(state);
+/*
+{
+    balance: bigint,   // Decrypted balance
+    pending: bigint,   // Decrypted pending
+    nonce: bigint      // Account nonce
+}
+*/
+when ussing this method, the Account first quieries the Tongo contract for the its current raw state and then then decrypts the balances using the encrypted hints stored in the contract. The raw state of the account (the state that is stored in the Tongo contract and it is visible to anyone) can be get with the rawState() method:
+
+const rawState = await account.rawState();
+console.log(rawState);
+/*
+{
+    balance: CipherBalance,      // Encrypted balance
+    pending: CipherBalance,       // Encrypted pending balance
+    audit: CipherBalance | undefined, // Encrypted balance for auditor
+    nonce: bigint,
+    aeBalance: AEBalance | undefined, // Encrypted hint to decrypt `balance`
+    aeAuditBalance: AEBalance | undefined //Encrypted hint to decrypt `audit`
+}
+*/
+Account Operations
+Accounts can create various operations. Operation are the the only way of transact within a Tongo contract. You can read more about them here.
+
+Transaction History
+The Tongo Account class has a method that allow the user to get its transaction history. Each operation made in Tongo emits an event with the relevant (generally encrypted) information. The getTxHistory() method fetches the emitted events starting from a given block_number, parses the data and decrypts it when necesary. The method returns a block-ordered array of all Tongo transactions involving the Tongo Account
+
+
+// The initial block number to fetch the history from
+const initial_block = 0; 
+const tx_history = await account.getTxHistory(initial_block);
+console.log(tx_history);
+/*
+[
+  {
+    type: 'withdraw',
+    tx_hash: '0x3ee8a6a351b05b4684e3e329399f6df02c446ce986c1e0be925ca71b757c6e0',
+    block_number: 6,
+    nonce: 2n,
+    amount: 1n,
+    to: '0x075662cc8b986d55d709d58f698bbb47090e2474918343b010192f487e30c23f"'
+  },
+  {
+    type: 'transferOut',
+    tx_hash: '0x3dc4e84d5212c125bb92e43c0c097d4630ec7899d60bdca408f7bcdb563b0c1',
+    block_number: 4,
+    nonce: 1n,
+    amount: 23n,
+    to: 'tpBg43FFq7SQhmimTMxubT7cJ4dDpjsp5r2TtYYToKV9'
+  },
+  {
+    type: 'fund',
+    tx_hash: '0x4e134a86b86db0fe494e030d9b3baa664f5ca51750051cda759d06e27931e1',
+    block_number: 3,
+    nonce: 0n,
+    amount: 100n
+  }
+]
+*/
+
+Operations
+Operations are objects that represent Tongo transactions. Each operation encapsulates the cryptographic proofs, encrypted data, and calldata needed for a specific action.
+
+Creation and Execution
+Operations are created by an instance of a Tongo Account Class and executed by a starknet signer. The general lifecycle of an Operation is
+
+// 1. Create the operation
+const operation = await tongoAccount.someOperation({...params});
+
+// 2. Convert to calldata
+const calldata = operation.toCalldata();
+
+// 3. Execute with Starknet signer
+const tx = await signer.execute([calldata]);
+
+// 4. Wait for confirmation
+await provider.waitForTransaction(tx.transaction_hash);
+All operations have a toCalldata() method that serialized all the needed data and contructs the starknet call. This call is to be executed by the transaction sender or signer.
+
+Each operation has its own set of params that are needed to create it. Some generalities are shared between the parameters of Operations and requires further explanations
+
+The sender parameter
+This parameter is present in all operations. It is the starknet account address that will execute the transaction (the signer address in the example). This address is binded in the Zero-Knowledge proofs. ZK proofs will only be valid if the sender of the transaction is matches this parameter.
+
+The amount parameter
+This parameter, when present, represents a amount of Tongos to transact with. This is NOT the amount of ERC20 you pretend to transact with. When you wrap some amount of ERC20 you recive some other amount of wraped ERC20 (we call them Tongos). The rate of conversion is fixed and defined when that particuar instance of Tongo was deployed.
+
+Note that 1 unit of Tongo is the minimum amount that a operation can handle. The Tongo Account class has the rate() method to query the rate of the Tongo contract and the tongoToERC20() get te equivalent amount of ERC20 to some amount of Tongos.
+
+Operation Types
+Tongo supports five core operations, we describe them in the following sections:
+
+Fund - Convert ERC20 tokens to encrypted balance
+Transfer - Send encrypted amounts to another account
+Rollover - Claim pending incoming transfers
+Withdraw - Convert encrypted balance back to ERC20
+Ragequit - Emergency withdrawal of entire balance
+
+Fund Operation
+This operation converts ERC20 tokens into encrypted Tongo balance. The parameters are:
+
+amount: The amount of encrypted Tongo balance you want to fund to your Tongo account.
+sender: The sender of the transaction. In this case it is also the starknet account that will send the ERC20 to the Tongo contract to convert into encrypted Tongo balance.
+On Fund operations, the Tongo contract calls the function transfer_from() form the ERC20 to pull assets and assign encrypted balance the to Tongo account. For this to work the sender has to sign an Approval in the ERC20 to allow the Tongo contract to move funds.
+
+The Approval call is also created by the Fund operation, so the sender does not have to create it.
+
+const fundOp = await account.fund({
+    amount: "AMOUNT_TO_FUND"
+    sender: "SENDER_ADDRESS"
+});
+
+// Execute both approval and fund
+await signer.execute([
+    fundOp.approve!,    // ERC20 approval
+    fundOp.toCalldata() // Fund operation
+]);
+Balance Handling
+When receiving a Fund operation for some amount, the cairo contract creates an ElGamal encryption of that amount for the account public key and fixed randomness. This encryption is added to the balance of the account. The pending balance of the account is not manipulated in this operation.
+
+Zero-Knowledge Proof
+In this opretaion, the only thing that has to be proven is the ownership of the Tongo account. This is done by proving knowledge of the account's private key.
+
+GITHUB
+TELEGRAM
+DOCS
+TWITTER
+
+Transfer Operation
+This operation sends encrypted amounts between two Tongo accounts of the same Tongo instance without revealing the transfer amount. The parameters are:
+
+amount: The amount of encrypted Tongo you want to transfer.
+to: The public key of the Tongo account thaw will receive the transfer.
+sender: The sender of the transaction.
+const transferOp = await senderAccount.transfer({
+    to: "RECEIVER_PUBLIC_KEY",
+    amount: "AMOUNT_TO_TRANSFER"
+    sender: "SENDER_ADDRESS"
+});
+
+const tx = await signer.execute([transferOp.toCalldata()]);
+await provider.waitForTransaction(tx.transaction_hash);
+Balance Handling
+As part of the Transfer operation, the user gives two ElGamal encryption of the same amount, one is encrypted for the sender's public key and it is subtracted from the sender's balance. The other one is encrypted for the receiver's public key and it is added to the receiver's pending balance.
+
+Zero-Knowledge Proof
+In this operation, the ZK proof given by the sender shows:
+
+Ownership of the sender account.
+The two given encrpytion are valid encryptions for the same amount under the correct public keys.
+The amount encrypted in positive.
+After the subtraction, the sender's balance is positive.
+
+ Rollover Operation
+This operation takes the pending balance of the account and converts it to actual usable balance for the account. The parameter is:
+
+sender: The sender of the transaction.
+const rolloverOp = await account.rollover({
+    sender: "SENDER_ADDRESS"
+});
+
+await signer.execute([rolloverOp.toCalldata()]);
+Balance Handling
+When receiving a Rollover operation, the cairo contract adds the user's pending balance to the user's balance. After that the user's pending balance is reseted to zero.
+
+Zero-Knowledge Proof
+In this opretaion, the only thing that has to be proven is the ownership of the Tongo account. This is done by proving knowledge of the account's private key.
+
+GITHUB
+TELEGRAM
+DOCS
+TWITTER
+
+Withdraw Operation
+This operation converts encrypted Tongo balance to ERC20 tokens and sends them to the given starknet account address. The parameters are:
+
+amount: The amount of Tongo balance to withdraw.
+to: The starknet account address to send the ERC20 to.
+sender: The sender of the transaction.
+Convert encrypted Tongo balance back to ERC20 tokens.
+
+const withdrawOp = await senderAccount.withdraw({
+    to: "RECEIVER_STARKNET_ACCOUNT_ADDRESS",
+    amount: "AMOUNT_TO_WITHDRAW"
+    sender: "SENDER_ADDRESS"
+});
+
+const tx = await signer.execute([withdrawOp.toCalldata()]);
+await provider.waitForTransaction(tx.transaction_hash);
+Balance Handling
+When receiving a Withdraw operation for some amount, the cairo contract creates an ElGamal encryption of that amount for the account public key and fixed randomness. This encryption is subtracted from balance of the account. The pending balance of the account is not manipulated in this operation.
+
+Zero-Knowledge Proof
+In this operation, the ZK proof given by the sender shows:
+
+Ownership of the user account.
+After the subtraction, the user's balance is positive.
+
+Ragequit Operation
+This operation converts all the encrypted Tongo balance to ERC20 tokens and sends them to the given starknet account address. The parameters are:
+
+to: The starknet account address to send the ERC20 to.
+sender: The sender of the transaction.
+const ragequitOp = await senderAccount.ragequit({
+    to: "RECEIVER_STARKNET_ACCOUNT_ADDRESS",
+    sender: "SENDER_ADDRESS"
+});
+
+const tx = await signer.execute([ragequit.toCalldata()]);
+await provider.waitForTransaction(tx.transaction_hash);
+Balance Handling
+When receiving a Ragequit operation, the user discloses the total encrypted Tongo balance, after sending the unwrapped ERC20 to the starknet account address, the cairo contract resets the user's balance to zero. The pending balance of the account is not manipulated in this operation.
+
+Zero-Knowledge Proof
+In this opretaion, the only thing that has to be proven is the ownership of the Tongo account. This is done by proving knowledge of the account's private key.
+
+Zero-Knowledge Proof
+In this operation, the ZK proof given by the sender shows:
+
+Ownership of the user account.
+The disclosed amount is the total balance of the user's account.
+
+Welcome
+Protocol Documentation
+1. Introduction
+2. Encryption System
+3. Storage Architecture
+4. Auditing & Compliance
+5. Tongo instances
+6. Contract ABI
+SHE Cryptography
+7. Overview
+8. Protocols
+8.1. POE
+8.2. POE2
+8.3. POEN
+8.4. ElGamal
+8.5. SameEncryption
+8.6. Bit
+8.7. Range
+SDK Documentation
+9. SDK Overview
+10. Quick Start
+11. Account Class
+12. Operations
+12.1. Fund
+12.2. Transfers
+12.3. Rollover
+12.4. Withdrawals
+12.5. Ragequit
+
+
+TONGO — by FAT SOLUTIONS
+Contract ABI
+The main Tongo contract implements the ITongo interface and manages all confidential payment operations:
+
+#[starknet::interface]
+pub trait ITongo<TContractState> {
+    // Tongo general setup:
+    /// Returns the contract address that Tongo is wraping.
+    fn ERC20(self: @TContractState) -> ContractAddress;
+
+    /// Returns the rate of conversion between the wrapped ERC20 a tongo:
+    ///
+    /// ERC20_amount = Tongo_amount*rate
+    ///
+    /// The amount variable in all operation refers to the amount of Tongos.
+    fn get_rate(self: @TContractState) -> u256;
+
+    /// Returns the bit_size set for this Tongo contract.
+    fn get_bit_size(self: @TContractState) -> u32;
+
+    /// Returns the contract address of the owner of the Tongo account.
+    fn get_owner(self: @TContractState) -> ContractAddress;
+
+    // User operations:
+    /// Funds a tongo account. Callable only by the account owner
+    ///
+    /// Emits FundEvent
+    fn fund(ref self: TContractState, fund: Fund);
+
+    /// Withdraw Tongos and send the ERC20 to a starknet address.
+    ///
+    /// Emits WithdrawEvent
+    fn withdraw(ref self: TContractState, withdraw: Withdraw);
+
+    /// Withdraw all the balance of an account and send the ERC20 to a starknet address. This proof
+    /// avoids the limitations of the range prove that are present in the regular withdraw.
+    ///
+    /// Emits RagequitEvent
+    fn ragequit(ref self: TContractState, ragequit: Ragequit);
+
+    /// Transfer Tongos from the balanca of te sender to the pending of the receiver
+    ///
+    /// Emits TransferEvent
+    fn transfer(ref self: TContractState, transfer: Transfer);
+
+    /// Moves to the balance the amount stored in the pending. Callable only by the account owner.
+    ///
+    /// Emits RolloverEvent
+    fn rollover(ref self: TContractState, rollover: Rollover);
+
+    // State reading functions
+    /// Returns the curretn stored balance of a Tongo account
+    fn get_balance(self: @TContractState, y: PubKey) -> CipherBalance;
+
+    /// Returns the current pending balance of a Tongo account
+    fn get_pending(self: @TContractState, y: PubKey) -> CipherBalance;
+
+    /// Return, if the Tongo instance allows, the current declared balance of a Tongo account for
+    /// the auditor
+    fn get_audit(self: @TContractState, y: PubKey) -> Option<CipherBalance>;
+
+    /// Returns the current nonce of a Tongo account
+    fn get_nonce(self: @TContractState, y: PubKey) -> u64;
+
+    /// Returns the current state of a Tongo account.
+    fn get_state(self: @TContractState, y: PubKey) -> State;
+
+    // Auditor handling
+    /// Returns the current auditor public key.
+    fn auditor_key(self: @TContractState) -> Option<PubKey>;
+
+    /// Rotates the current auditor public key.
+    fn change_auditor_key(ref self: TContractState, new_auditor_key: PubKey);
+}
+Storage Structure
+#[storage]
+struct Storage {
+    /// The contract address that is owner of the Tongo instance.
+    owner: ContractAddress,
+    /// The contract address of the ERC20 that Tongo is wrapping.
+    ERC20: ContractAddress,
+    /// The conversion  rage between the wrapped ERC20 a tongo:
+    ///
+    /// ERC20_amount = Tongo_amount*rate
+    rate: u256,
+    /// The bit size this contract will work with. This limites the values that cant be proven
+    /// by a range proof. If is set to 32 that means that range proof will only work for values
+    /// between 0 and 2**32-1.
+    /// Note: The computational cost of verifying a tranfers operation (the most expensive one)
+    /// is about (30 + 10*n) ec_muls and (20 + 8n) ec_adds, where n is the bit_size
+    bit_size: u32,
+    /// The encrypted balance for the given pubkey.
+    balance: Map<PubKey, CipherBalance>,
+    /// The encrypted pending balance for the given pubkey. The pending balance is the sum of
+    /// incoming transfer. User has to execute a rollover operation to convert this to usable
+    /// balance.
+    pending: Map<PubKey, CipherBalance>,
+    /// The nonce of the given pubkey. Nonce is increased in every user operation.
+    nonce: Map<PubKey, u64>,
+    /// Hint to fast decrypt the balance of the given pubkey. This encrypts the same amount that
+    /// is stored in `balance`. It is neither check nor enforced by the protocol, only the the
+    /// user can decrypt it with knowledge of the private key and it is only usefull for
+    /// attempting a fast decryption of `balance.
+    ae_balance: Map<PubKey, AEBalance>,
+    /// The balance of the given pubkey enrypted for the auditor key.
+    ///
+    /// If the contract was deployed witouth an auditor, the map is empty and all keys return
+    /// the Default CipherBalance {L: {x:0, y:0}, R:{x:0,y:0}};
+    audit_balance: Map<PubKey, CipherBalance>,
+    /// Hint to fast decrypt the audited balance of the given pubkey. This encrypts the same
+    /// amount that is stored in `audit_balance`. It is neither check nor enforced by the
+    /// protocol, only the auditor can decrypt it with knowledge of the auditor private key and
+    /// it is only usefull for attempting a fast decryption of `audit_balance`.
+    ae_audit_balance: Map<PubKey, AEBalance>,
+    /// The auditor pubkey. If the contract was deployed without auditor this will be an
+    /// Option::None without a way to change it.
+    auditor_key: Option<PubKey>,
+    /// The increasing number that identifies the public key
+    key_number: u128,
+}
+Events
+The contract emits events for all operations to enable off-chain monitoring:
+
+/// Event emited in a Fund operation.
+///
+/// - to: The Tongo account to fund.
+/// - nonce: The nonce of the Tongo account.
+/// - amount: The ammount of tongo to fund.
+#[derive(Drop, starknet::Event)]
+pub struct FundEvent {
+    #[key]
+    pub to: PubKey,
+    #[key]
+    pub nonce: u64,
+    pub amount: u128,
+}
+
+/// Event emited in a Rollover operation.
+///
+/// - to: The Tongo account to rollover.
+/// - nonce: The nonce of the Tongo account.
+/// - rolloverred: The cipherbalance of the rolloverred amount.
+#[derive(Drop, starknet::Event)]
+pub struct RolloverEvent {
+    #[key]
+    pub to: PubKey,
+    #[key]
+    pub nonce: u64,
+    pub rollovered: CipherBalance,
+}
+
+
+/// Event emited in a Withdraw operation.
+///
+/// - from: The Tongo account to withdraw from.
+/// - nonce: The nonce of the Tongo account.
+/// - amount: The ammount of tongo to withdraw.
+/// - to: The starknet contract address to send the funds to.
+#[derive(Drop, starknet::Event)]
+pub struct WithdrawEvent {
+    #[key]
+    pub from: PubKey,
+    #[key]
+    pub nonce: u64,
+    pub amount: u128,
+    pub to: ContractAddress,
+}
+
+
+/// Event emited in a Transfer operation.
+///
+/// - to: The Tongo account to send tongos to.
+/// - from: The Tongo account to take tongos from.
+/// - nonce: The nonce of the Tongo account (from).
+/// - transferBalance: The amount to transfer encrypted for the pubkey of `to`.
+/// - transferBalanceSelf: The amount to transfer encrypted for the pubkey of `from`.
+/// - hintTransfer: AE encryption of the amount to transfer to `to`.
+/// - hintLeftover: AE encryption of the leftover balance of `from`.
+#[derive(Drop, starknet::Event)]
+pub struct TransferEvent {
+    #[key]
+    pub to: PubKey,
+    #[key]
+    pub from: PubKey,
+    #[key]
+    pub nonce: u64,
+    pub transferBalance: CipherBalance,
+    pub transferBalanceSelf: CipherBalance,
+    pub hintTransfer: AEBalance,
+    pub hintLeftover: AEBalance,
+}
+
+
+/// Event emited in a Ragequit operation.
+///
+/// - from: The Tongo account to withdraw from.
+/// - nonce: The nonce of the Tongo account.
+/// - amount: The ammount of tongo to ragequit (the total amount of tongos in the account).
+/// - to: The starknet contract address to send the funds to.
+#[derive(Drop, starknet::Event)]
+pub struct RagequitEvent {
+    #[key]
+    pub from: PubKey,
+    #[key]
+    pub nonce: u64,
+    pub amount: u128,
+    pub to: ContractAddress,
+}
+
+/// Event emited when users declare their balances to the auditor.
+///
+/// - from: The Tongo account that is declaring its balance.
+/// - nonce: The nonce of the Tongo accout.
+/// - auditorPubKey: The current public key of the auditor.
+/// - declaredCipherBalance: The balance of the user encrypted for the auditor pubkey.
+/// - hint: AE encryption of the balance for the auditor fast decryption.
+#[derive(Drop, starknet::Event)]
+pub struct BalanceDeclared {
+    #[key]
+    pub from: PubKey,
+    #[key]
+    pub nonce: u64,
+    pub auditorPubKey: PubKey,
+    pub declaredCipherBalance: CipherBalance,
+    pub hint: AEBalance,
+}
+
+
+/// Event emited when users declare a transfer to the auditor.
+///
+/// - from: The Tongo account that is executing the transfer.
+/// - to: The Tongo account that is receiving the transfer.
+/// - nonce: The nonce of the Tongo accout (from).
+/// - auditorPubKey: The current public key of the auditor.
+/// - declaredCipherBalance: The transfer amount encrypted for the auditor pubkey.
+/// - hint: AE encryption of the balance for the auditor fast decryption.
+#[derive(Drop, starknet::Event)]
+pub struct TransferDeclared {
+    #[key]
+    pub from: PubKey,
+    #[key]
+    pub to: PubKey,
+    #[key]
+    pub nonce: u64,
+    pub auditorPubKey: PubKey,
+    pub declaredCipherBalance: CipherBalance,
+    pub hint: AEBalance,
+}
+
+/// Event emited when the owner sets a public key for the auditor.
+///
+/// - keyNumber: An increasing number that identifies the public key
+/// - AuditorPubKey: The newly set auditor public key.
+#[derive(Drop, starknet::Event)]
+pub struct AuditorPubKeySet {
+    #[key]
+    pub keyNumber: u128,
+    pub AuditorPubKey: PubKey,
+}
+Operations
+1. Fund Operation
+Converts ERC20 tokens to encrypted balances:
+
+This code is a simplification of the actual code
+
+/// Funds a tongo account. Callable only by the account owner
+///
+/// Emits FundEvent
+fn fund(ref self: ContractState, fund: Fund) {
+    verify_fund(/* public inputs */, proof);
+
+    self._transfer_from_caller(amount);
+
+    let cipher = CipherBalanceTrait::new(to, amount, 'fund');
+    self._add_balance(to, cipher);
+    self.emit(FundEvent);
+
+    if self.auditor.is_some() {
+        self._handle_audit(auditPart);
+    }
+}
+2. Transfer Operation
+Performs confidential transfers between accounts:
+
+This code is a simplification of the actual code
+
+/// Transfer Tongos from the balance of the sender to the pending of the receiver
+///
+/// Emits TransferEvent
+fn transfer(ref self: ContractState, transfer: Transfer) {
+    verify_transfer(/* public inputs */, proof);
+
+    self._subtract_balance(from, transferBalanceSelf);
+    self._add_pending(to, transferBalance);
+    self.emit( TransferEvent );
+
+    if self.auditor.is_some() {
+        self._handle_audit(auditPart);
+    }
+}
+3. Rollover Operation
+Merges pending transfers into main balance:
+
+This code is a simplification of the actual code
+
+/// Moves to the balance the amount stored in the pending. Callable only by the account
+/// owner.
+///
+/// Emits RolloverEvent
+fn rollover(ref self: TContractState, rollover: Rollover) {
+    verify_rollover(/* public inputs */, proof);
+
+    self._pending_to_balance(to);
+
+    self.emit( RolloverEvent );
+}
+4. Withdraw Operation
+Convert back to standard ERC20 tokens:
+
+
+This code is a simplification of the actual code
+
+/// Withdraw Tongos and send the ERC20 to a starknet address.
+///
+/// Emits WithdrawEvent
+fn withdraw(ref self: ContractState, withdraw: Withdraw) {
+    verify_withdraw(/* public inputs */, proof);
+
+    let cipher = CipherBalanceTrait::new(from, amount, 'withdraw');
+    self._subtract_balance(from, cipher);
+    self._transfer_to(to, amount);
+
+    self.emit( WithdrawEvent );
+
+    if self.auditor.is_some() {
+        self._handle_audit(auditPart);
+    }
+}
+
+GITHUB
+TELEGRAM
+DOCS
+TWITTER
+BUILT BY FAT SOLUTIONS
+@FATSOLUTIONSXYZ
