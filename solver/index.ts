@@ -31,7 +31,8 @@ async function initAccount() {
 }
 
 app.post('/execute-intent', async (req, res) => {
-    const { userTongoAddress, btcAmount, targetVesuVault, nonce, signature } = req.body;
+    const { btcAmount, targetVesuVault, nonce, signature } = req.body;
+    const userTongoAddress = typeof req.body.userTongoAddress === 'string' ? req.body.userTongoAddress.trim() : req.body.userTongoAddress;
 
     console.log(`\n📥 [NEW SHIELDED INTENT RECEIVED]`);
     console.log(`Amount: ${btcAmount} units`);

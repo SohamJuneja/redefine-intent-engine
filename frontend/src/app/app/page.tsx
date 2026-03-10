@@ -57,7 +57,7 @@ export default function AppPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userTongoAddress: tongoAddress || null,
+          userTongoAddress: tongoAddress.trim() || null,
           btcAmount: btcAmount,
           targetVesuVault: VESU_VAULT,
           nonce: Date.now(),
